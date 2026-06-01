@@ -1,0 +1,107 @@
+<head>what the do doin'</head>
+<body>
+    <h1>Dinamica vehicular</h1>
+    <p>La <strong>dinamica vehicular</strong> es un tema tratado en varios textos a lo largo del ultimo siglo. Como dice <I>Wong (2019)</I> 
+    es importante tener en cuenta aspectos como el rozamiento, la aerodinamica, etc. </p>
+    <h2>Fuerzas de resistencia</h2>
+    <h3>Aerodinámica</h3>
+    <p>Se define a la resistencia que el vehiculo sufre debido al rozamiento con el aire.</p>
+    <h3>Rodadura</h3>
+    <p>Se define a la resistencia que el vehiculo sufre debido al rozamiento entre la rueda y la carretera.</p>
+    <h3>Peso propio</h3>
+    <p>Se define a la resistencia que el vehiculo sufre debido al pes propio del vehiculo en una pendiente.</p>
+    Podemos entonces listarlas como:
+    <ul>
+        <li>Aerodinamica</li>
+        <li>Rodadura</li>
+        <li>Peso propio</li>    
+    </ul>
+    Visualizarlo en una tabla:
+    <center><table border=1>
+            <tr><td>Aerodinamica</td></tr>
+            <tr><td>Rodadura</td></tr>
+            <tr><td>Peso propio</td></tr>
+    </table>
+    </center>
+    <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diseño con Grid</title>
+    <style>
+        /* Contenedor principal de toda la página */
+        .contenedor-pagina {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        /* 1. Divisor Grande del Inicio */
+        .divisor-grande {
+            background-color: #3498db;
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 20px; /* Separa el grande de los pequeños */
+        }
+
+        /* Contenedor de la rejilla inferior (2 columnas y 2 filas) */
+        .rejilla-pequenos {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* Crea 2 columnas de igual tamaño */
+            gap: 20px; /* Espacio de separación entre las cajas */
+        }
+
+        /* Estilo general para los 4 divisores pequeños */
+        .divisor-pequeno {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 8px;
+            border: 1px solid #bdc3c7;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor-pagina">
+
+        <!-- Divisor Grande Superior -->
+        <div class="divisor-grande">
+            <h1>Divisor Grande Principal</h1>
+            <p>Este contenedor ocupa todo el ancho al inicio de la página.</p>
+        </div>
+
+        <!-- Bloque Inferior con los 4 Divisores Pequeños -->
+        <div class="rejilla-pequenos">
+            <div class="divisor-pequeno">
+                <h3>Divisor 1</h3>
+                <p>Fila 1 - Columna 1</p>
+            </div>
+            
+            <div class="divisor-pequeno">
+                <h3>Divisor 2</h3>
+                <p>Fila 1 - Columna 2</p>
+            </div>
+            
+            <div class="divisor-pequeno">
+                <h3>Divisor 3</h3>
+                <p>Fila 2 - Columna 1</p>
+            </div>
+            
+            <div class="divisor-pequeno">
+                <h3>Divisor 4</h3>
+                <p>Fila 2 - Columna 2</p>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
+
+</body>
