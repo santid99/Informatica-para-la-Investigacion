@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta 2: Análisis de Tensiones Estilo ANSYS</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 25px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            border: 1px solid #334155;
+        }
+        h2 { 
+            color: #deff9a; 
+            margin-top: 0;
+            border-bottom: 1px solid #334155; 
+            padding-bottom: 15px;
+        }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 25px;
+        }
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .panel-section {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+        .panel-section h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 5px;
+        }
+        .control-item { margin-bottom: 15px; }
+        .control-item:last-child { margin-bottom: 0; }
+        
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #cbd5e1;
+        }
+        .inputs-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="range"] { flex: 1; accent-color: #deff9a; cursor: pointer; }
+        input[type="number"] {
+            width: 80px; background: #1e293b; border: 1px solid #475569;
+            color: #f8fafc; padding: 4px 6px; border-radius: 4px; font-size: 13px; text-align: center;
+        }
+        
+        .canvas-container {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            background: #090d16;
+            border-radius: 4px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+        .status-box {
+            width: 100%;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .status-ok { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e; }
+        .status-fail { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Herramienta 2: Simulación de Flexión y Esfuerzo de Viga (Estilo MEF / ANSYS)</h2>
+    
+    <div class="main-layout">
+        <div class="sidebar">
+            
+            <div class="panel-section">
+                <h3>Geometría de la Viga</h3>
+                <div class="control-item">
+                    <label>Longitud ($L$): <span style="color:#deff9a" id="lbl-L">2.0</span> m</label>
+                    <div class="inputs-group">
+                        <input type="range" id="slide-L" min="1.0" max="5.0" step="0.1" value="2.0" oninput="sincronizar(this, 'num-L')">
+                        <input type="number" id="num-L" min="1.0" max="5.0" step="0.1" value="2.0" oninput="sincronizar(this, 'slide-L')">
+                    </div>
+                </div>
+                <div class="control-item">
+                    <label>Peralte/Altura ($h$): <span style="color:#deff9a" id="lbl-h">150</span> mm</label>
+                    <div class="inputs-group">
+                        <input type="range" id="slide-h" min="50" max="300" step="5" value="150" oninput="sincronizar(this, 'num-h')">
+                        <input type="number" id="num-h" min="50" max="300" step="5" value="150" oninput="sincronizar(this, 'slide-h')">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Carga y Material</h3>
+                <div class="control-item">
+                    <label>Fuerza en la Punta ($F$): <span style="color:#deff9a" id="lbl-F">25</span> kN</label>
+                    <div class="inputs-group">
+                        <input type="range" id="slide-F" min="1" max="150" step="1" value="25" oninput="sincronizar(this, 'num-F')">
+                        <input type="number" id="num-F" min="1" max="150" step="1" value="25" oninput="sincronizar(this, 'slide-F')">
+                    </div>
+                </div>
+                <div class="control-item">
+                    <label>Límite de Rotura ($\sigma_{\text{rot}}$): <span style="color:#deff9a" id="lbl-sigma">250</span> MPa</label>
+                    <div class="inputs-group">
+                        <input type="range" id="slide-sigma" min="50" max="500" step="10" value="250" oninput="sincronizar(this, 'num-sigma')">
+                        <input type="number" id="num-sigma" min="50" max="500" step="10" value="250" oninput="sincronizar(this, 'slide-sigma')">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="canvasViga" width="650" height="350"></canvas>
+            <div id="statusReport" class="status-box status-ok">ESTRUCTURA SEGURA EN RÉGIMEN ELÁSTICO</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvasViga');
+const ctx = canvas.getContext('2d');
+
+// Constantes físicas fijas del material (Acero estructural simulado)
+const E = 200e9;      // Módulo de Young (200 GPa)
+const base_b = 0.05;  // Ancho fijo de la viga (50 mm en metros)
+
+function sincronizar(origen, idDestino) {
+    document.getElementById(idDestino).value = origen.value;
+    calcularEstructura();
+}
+
+function calcularEstructura() {
+    // 1. Obtener entradas y pasarlas a unidades del SI
+    const L = parseFloat(document.getElementById('num-L').value);
+    const h = parseFloat(document.getElementById('num-h').value) / 1000; // mm a m
+    const F = parseFloat(document.getElementById('num-F').value) * 1000; // kN a N
+    const sigma_rotura = parseFloat(document.getElementById('num-sigma').value) * 1e6; // MPa a Pa
+
+    // Actualizar labels
+    document.getElementById('lbl-L').innerText = L.toFixed(1);
+    document.getElementById('lbl-h').innerText = document.getElementById('num-h').value;
+    document.getElementById('lbl-F').innerText = document.getElementById('num-F').value;
+    document.getElementById('lbl-sigma').innerText = document.getElementById('num-sigma').value;
+
+    // 2. Modelo de Resistencia de Materiales
+    const I = (base_b * Math.pow(h, 3)) / 12; // Momento de inercia de la sección
+    const Z = (base_b * Math.pow(h, 2)) / 6;  // Módulo resistente elástico
+    const M_max = F * L;                      // Momento máximo en el empotramiento
+    const sigma_max = M_max / Z;              // Esfuerzo normal máximo (Pa)
+    const deflexion_max = (F * Math.pow(L, 3)) / (3 * E * I); // Deflexión en la punta (m)
+
+    // Verificar si hay colapso estructural
+    const haRoto = sigma_max >= sigma_rotura;
+
+    // 3. Renderizar Gráficamente en HTML5 Canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    dibujarEntorno();
+
+    // Dimensiones y escalas para el dibujo
+    const x_inicio = 80;               // Margen izquierdo (Empotramiento)
+    const y_neutro = canvas.height / 2; // Línea neutra vertical en el canvas
+    const pixel_por_metro = 100;       // Escala horizontal
+    const escala_deflexion = 150;      // Amplificación visual de la deformación elástica
+
+    const viga_pixel_L = L * pixel_por_metro;
+    const viga_pixel_h = h * 400;      // Factor de escala visual para el grosor de la viga
+
+    if (!haRoto) {
+        // --- CASO VIGA SEGURA / ELÁSTICA ---
+        document.getElementById('statusReport').innerText = `ESTRUCTURA SEGURA | Esfuerzo Máx: ${(sigma_max/1e6).toFixed(1)} MPa | Deflexión Punta: ${(deflexion_max*1000).toFixed(2)} mm`;
+        document.getElementById('statusReport').className = "status-box status-ok";
+
+        // Dibujar viga discretizada por rodajas para generar el gradiente elástico (Mapas de Esfuerzos)
+        const subdivisiones = 200;
+        for (let i = 0; i < subdivisiones; i++) {
+            let x_rel = (i / subdivisiones) * L;
+            let x_next_rel = ((i + 1) / subdivisiones) * L;
+
+            // Curva elástica aproximada de deflexión y(x) = (F*x^2)*(3L - x)/(6EI)
+            let def_y = (F * Math.pow(x_rel, 2) * (3 * L - x_rel)) / (6 * E * I);
+            let def_y_next = (F * Math.pow(x_next_rel, 2) * (3 * L - x_next_rel)) / (6 * E * I);
+
+            let px_x1 = x_inicio + (x_rel * pixel_por_metro);
+            let px_x2 = x_inicio + (x_next_rel * pixel_por_metro);
+            let px_y1 = y_neutro + (def_y * escala_deflexion);
+            let px_y2 = y_neutro + (def_y_next * escala_deflexion);
+
+            // Calcular tensión local en esta rodaja para mapear el color (Gradiente lineal de momentos)
+            let M_local = F * (L - x_rel);
+            let sigma_local = M_local / Z;
+            let ratio_esfuerzo = Math.min(sigma_local / sigma_rotura, 1.0);
+
+            // Conversión matemática de tensión a color HSL (Estilo ANSYS: Azul=0° a Rojo=120° invertido)
+            let hue = (1.0 - ratio_esfuerzo) * 240; 
+
+            // Pintar la rodaja diferencial
+            ctx.beginPath();
+            ctx.moveTo(px_x1, px_y1 - viga_pixel_h/2);
+            ctx.lineTo(px_x2, px_y2 - viga_pixel_h/2);
+            ctx.lineTo(px_x2, px_y2 + viga_pixel_h/2);
+            ctx.lineTo(px_x1, px_y1 + viga_pixel_h/2);
+            ctx.closePath();
+            ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+            ctx.fill();
+        }
+
+        // Flecha de Fuerza Actuante
+        dibujarFlechaCarga(x_inicio + viga_pixel_L, y_neutro + (deflexion_max * escala_deflexion) - viga_pixel_h/2 - 50, x_inicio + viga_pixel_L, y_neutro + (deflexion_max * escala_deflexion) - viga_pixel_h/2);
+
+    } else {
+        // --- CASO VIGA ROTA (FALLO ESTRUCTURAL) ---
+        document.getElementById('statusReport').innerText = `¡COLAPSO ESTRUCTURAL! El Esfuerzo Máximo de ${(sigma_max/1e6).toFixed(1)} MPa superó los ${document.getElementById('num-sigma').value} MPa permitidos.`;
+        document.getElementById('statusReport').className = "status-box status-fail";
+
+        // Segmento Fijo (Empotramiento roto)
+        ctx.fillStyle = "rgba(239, 68, 68, 0.4)"; // Tonalidad roja de estrés residual
+        ctx.beginPath();
+        ctx.moveTo(x_inicio, y_neutro - viga_pixel_h/2);
+        ctx.lineTo(x_inicio + 15, y_neutro - viga_pixel_h/4);
+        ctx.lineTo(x_inicio + 5, y_neutro + viga_pixel_h/2);
+        ctx.lineTo(x_inicio, y_neutro + viga_pixel_h/2);
+        ctx.closePath();
+        ctx.fillStyle = "#ef4444";
+        ctx.fill();
+
+        // Segmento Caído (El resto de la viga desprendido y rotado por gravedad)
+        ctx.save();
+        ctx.translate(x_inicio + 15, y_neutro - viga_pixel_h/4);
+        ctx.rotate(35 * Math.PI / 180); // Ángulo físico simulado de caída de rotura
+        
+        // Dibujamos el resto del cuerpo con el gradiente de tensiones congelado al momento del quiebre
+        let vigaRestantePx = viga_pixel_L - 15;
+        let grad = ctx.createLinearGradient(0, 0, vigaRestantePx, 0);
+        grad.addColorStop(0, '#ef4444'); // Zona de rotura crítica (Rojo vivo)
+        grad.addColorStop(0.5, '#eab308'); // Transición (Amarillo)
+        grad.addColorStop(1, '#3b82f6'); // Extremo libre (Azul)
+        
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(0, -viga_pixel_h/4);
+        ctx.lineTo(vigaRestantePx, -viga_pixel_h/4);
+        ctx.lineTo(vigaRestantePx, viga_pixel_h/4 + viga_pixel_h/2);
+        ctx.lineTo(-10, viga_pixel_h/4 + viga_pixel_h/2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+function dibujarEntorno() {
+    // Dibujar pared rígida del empotramiento (Líneas de soporte estructural)
+    ctx.strokeStyle = "#64748b";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(80, 50);
+    ctx.lineTo(80, 300);
+    ctx.stroke();
+
+    // Rayado del empotramiento mecánico
+    ctx.lineWidth = 2;
+    for (let y = 60; y < 300; y += 15) {
+        ctx.beginPath();
+        ctx.moveTo(80, y);
+        ctx.lineTo(65, y + 10);
+        ctx.stroke();
+    }
+}
+
+function dibujarFlechaCarga(x1, y1, x2, y2) {
+    const radioFlecha = 10;
+    ctx.strokeStyle = "#f43f5e";
+    ctx.fillStyle = "#f43f5e";
+    ctx.lineWidth = 4;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - radioFlecha, y2 - radioFlecha);
+    ctx.lineTo(x2 + radioFlecha, y2 - radioFlecha);
+    ctx.closePath();
+    ctx.fill();
+}
+
+// Inicialización automática
+calcularEstructura();
+</script>
+
+</body>
+</html>
