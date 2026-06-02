@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta 1: Cinemática Avanzada de Proyectiles</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Estética Premium Dark Mode */
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 25px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            border: 1px solid #334155;
+        }
+        h2 { 
+            color: #deff9a; 
+            margin-top: 0;
+            border-bottom: 1px solid #334155; 
+            padding-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        /* Controles distribuidos en Grid */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 25px;
+        }
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .panel-section {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+        .panel-section h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 5px;
+        }
+        
+        .control-item {
+            margin-bottom: 15px;
+        }
+        .control-item:last-child { margin-bottom: 0; }
+        
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #cbd5e1;
+        }
+        .inputs-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="range"] {
+            flex: 1;
+            accent-color: #deff9a;
+            cursor: pointer;
+        }
+        input[type="number"] {
+            width: 75px;
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #f8fafc;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            text-align: center;
+        }
+        input[type="number"]:focus {
+            outline: 1px solid #deff9a;
+        }
+        
+        /* Contenedor del gráfico */
+        .canvas-container {
+            position: relative;
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #334155;
+            min-height: 450px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Herramienta 1: Trayectoria Parabólica con Vector de Fuerza Inicial</h2>
+    
+    <div class="main-layout">
+        <div class="sidebar">
+            
+            <div class="panel-section">
+                <h3>Variables Físicas</h3>
+                
+                <div class="control-item">
+                    <label>Masa ($m$): <span style="color:#deff9a" id="lbl-masa">5.0</span> kg</label>
+                    <div class="inputs-group">
+                        <input type="range" id="slide-masa" min="1" max="50" step="0.5" value="5" oninput="sincronizar(this, 'num-masa')">
+                        <input type="number" id="num-masa" min="1" max="50" step="0.5" value="5" oninput="sincronizar(this, 'slide-masa')">
+                    </div>
+                </div>
+
+                <div class="control-item">
+                    <label>Fuerza Inicial ($F$): <span style="color:#deff9a" id="lbl-fuerza">600</span> N</label>
+                    <div class="inputs-group">
+                        <input type="range" id="slide-fuerza" min="100" max="3000" step="50" value="600" oninput="sincronizar(this, 'num-fuerza')">
+                        <input type="number" id="num-fuerza" min="100" max="3000" step="50" value="600" oninput="sincronizar(this, 'slide-fuerza')">
+                    </div>
+                </div>
+
+                <div class="control-item">
+                    <label>Ángulo (&theta;): <span style="color:#deff9a" id="lbl-angulo">45</span>°</label>
+                    <div class="inputs-group">
+                        <input type="range" id="slide-angulo" min="10" max="85" step="1" value="45" oninput="sincronizar(this, 'num-angulo')">
+                        <input type="number" id="num-angulo" min="10" max="85" step="1" value="45" oninput="sincronizar(this, 'slide-angulo')">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>Límites de Ejes (Escala)</h3>
+                <div class="control-item">
+                    <label>Máximo Horizontal X (m)</label>
+                    <input type="number" id="limite-x" value="100" min="10" max="2000" style="width: 100%; text-align: left;" oninput="calcularModelo()">
+                </div>
+                <div class="control-item">
+                    <label>Máximo Vertical Y (m)</label>
+                    <input type="number" id="limite-y" value="50" min="10" max="2000" style="width: 100%; text-align: left;" oninput="calcularModelo()">
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="graficoEspacio"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- CONFIGURACIÓN BASE DE CHART.JS ---
+const ctx = document.getElementById('graficoEspacio').getContext('2d');
+let chartInstancia = new Chart(ctx, {
+    type: 'line',
+    data: {
+        datasets: [
+            {
+                label: 'Trayectoria Parabólica',
+                data: [],
+                borderColor: '#deff9a',
+                backgroundColor: 'rgba(222, 255, 154, 0.05)',
+                borderWidth: 3,
+                pointRadius: 0,
+                fill: true,
+                order: 2
+            },
+            {
+                label: 'Vector Fuerza Inicial (Impulso)',
+                data: [],
+                borderColor: '#f43f5e', // Color carmín/rosa para destacar el vector
+                borderWidth: 4,
+                pointRadius: 0,
+                fill: false,
+                order: 1
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: '#cbd5e1' } }
+        },
+        scales: {
+            x: {
+                type: 'linear',
+                position: 'bottom',
+                grid: { color: '#334155' },
+                ticks: { color: '#94a3b8' },
+                title: { display: true, text: 'Distancia Alcance X (metros)', color: '#cbd5e1' }
+            },
+            y: {
+                type: 'linear',
+                grid: { color: '#334155' },
+                ticks: { color: '#94a3b8' },
+                title: { display: true, text: 'Altitud Y (metros)', color: '#cbd5e1' }
+            }
+        }
+    }
+});
+
+// --- CONSTANTES DEL MODELO ---
+const g = 9.81;
+const dt_impulso = 0.1; // Tiempo que actúa la fuerza inicial
+
+// --- ENTRADA DE DATOS Y SINCRONIZACIÓN BI-DIRECCIONAL ---
+function sincronizar(origen, idDestino) {
+    document.getElementById(idDestino).value = origen.value;
+    calcularModelo();
+}
+
+// --- CORE MATEMÁTICO DEL ENTORNO ---
+function calcularModelo() {
+    // 1. Obtener valores de la interfaz
+    const m = parseFloat(document.getElementById('num-masa').value);
+    const F = parseFloat(document.getElementById('num-fuerza').value);
+    const anguloDeg = parseFloat(document.getElementById('num-angulo').value);
+    
+    const xMaxManual = parseFloat(document.getElementById('limite-x').value) || 100;
+    const yMaxManual = parseFloat(document.getElementById('limite-y').value) || 50;
+
+    // Actualizar labels visuales rápidos
+    document.getElementById('lbl-masa').innerText = m.toFixed(1);
+    document.getElementById('lbl-fuerza').innerText = F;
+    document.getElementById('lbl-angulo').innerText = anguloDeg;
+
+    // 2. Ecuaciones cinemáticas básicadas en el Impulso
+    const v0 = (F * dt_impulso) / m; 
+    const rad = (anguloDeg * Math.PI) / 180;
+    
+    const v0x = v0 * Math.cos(rad);
+    const v0y = v0 * Math.sin(rad);
+    const tVuelo = (2 * v0y) / g;
+
+    // 3. Generación de coordenadas de la curva
+    let trayectoriaPuntos = [];
+    const intervalos = 80;
+    const deltaT = tVuelo / intervalos;
+
+    for (let i = 0; i <= intervalos; i++) {
+        let t = i * deltaT;
+        let posX = v0x * t;
+        let posY = v0y * t - 0.5 * g * Math.pow(t, 2);
+        if (posY < 0) posY = 0; // Saturación física: suelo
+        trayectoriaPuntos.push({ x: posX, y: posY });
+    }
+
+    // 4. Geometría del Vector de Fuerza Inicial
+    // Escalamos visualmente la longitud del vector para que luzca bien sin importar los límites del eje
+    const factorEscalaVector = Math.min(xMaxManual, yMaxManual) * 0.15; 
+    const longitudNormalizada = (F / 3000) * factorEscalaVector; // Máximo relativo a 3000N
+    
+    const vectorEndX = longitudNormalizada * Math.cos(rad);
+    const vectorEndY = longitudNormalizada * Math.sin(rad);
+
+    let vectorPuntos = [
+        { x: 0, y: 0 },
+        { x: vectorEndX, y: vectorEndY }
+    ];
+
+    // 5. Inyección de límites fijos manuales en los ejes
+    chartInstancia.options.scales.x.min = 0;
+    chartInstancia.options.scales.x.max = xMaxManual;
+    chartInstancia.options.scales.y.min = 0;
+    chartInstancia.options.scales.y.max = yMaxManual;
+
+    // 6. Actualizar Datasets y refrescar gráfico
+    chartInstancia.data.datasets[0].data = trayectoriaPuntos;
+    chartInstancia.data.datasets[1].data = vectorPuntos;
+    chartInstancia.update();
+}
+
+// Inicialización automática
+calcularModelo();
+</script>
+
+</body>
+</html>
