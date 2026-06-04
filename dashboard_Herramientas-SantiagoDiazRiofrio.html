@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRACTICA INFO PARA LA INVESTIGACION</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: #0b111e;
+            color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #1e293b;
+            padding-bottom: 15px;
+        }
+
+        .dashboard-header h1 {
+            color: #deff9a;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .dashboard-header p {
+            color: #64748b;
+            margin: 5px 0 0 0;
+            font-size: 14px;
+        }
+
+        .grid-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Bloque Superior: Herramienta Principal */
+        .main-tool-wrapper {
+            width: 100%;
+            background: #131a2c;
+            border-radius: 16px;
+            border: 1px solid #deff9a; /* Destacada con el borde verde característico */
+            padding: 15px;
+            box-sizing: border-box;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Matriz Inferior: 2 filas x 2 columnas para las herramientas secundarias */
+        .sub-tools-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+
+        .tool-card {
+            background: #131a2c;
+            border-radius: 16px;
+            border: 1px solid #1e293b;
+            padding: 15px;
+            box-sizing: border-box;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tool-title {
+            color: #38bdf8;
+            font-size: 14px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-left: 5px;
+            border-left: 3px solid #38bdf8;
+        }
+
+        .tool-title.ppal {
+            color: #deff9a;
+            border-left-color: #deff9a;
+        }
+
+        /* Estilización y comportamiento de los contenedores embebidos */
+        iframe {
+            width: 100%;
+            border: none;
+            border-radius: 8px;
+            background: #070a12;
+        }
+
+        /* Altura asignada para que todo sea cómodo y scrolleable internamente */
+        .iframe-ppal {
+            height: 750px; 
+        }
+
+        .iframe-sub {
+            height: 600px;
+        }
+
+        /* Adaptabilidad para pantallas más compactas o portátiles pequeños */
+        @media (max-width: 1100px) {
+            .sub-tools-grid {
+                grid-template-columns: 1fr; /* Pasa a una sola columna si no hay ancho suficiente */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-header">
+        <h1>DASHBOARD DE HERRAMIENTAS - PRÁCTICA INFORMÁTICA PRACTICA PARA LA INVESTIGACIÓN</h1>
+        <p>SANTIAGO DÍAZ RIOFRIO</p>
+    </div>
+
+    <div class="grid-container">
+        
+        <div class="main-tool-wrapper">
+            <div class="tool-title ppal">Herramienta Principal: Dinámica Vehicular</div>
+            <iframe class="iframe-ppal" src="https://santid99.github.io/Informatica-para-la-Investigacion/HerramientaPpal-DinamicaVehicular.html" loading="lazy"></iframe>
+        </div>
+
+        <div class="sub-tools-grid">
+            
+            <div class="tool-card">
+                <div class="tool-title">Módulo 1: Trayectoria Parabólica</div>
+                <iframe class="iframe-sub" src="https://santid99.github.io/Informatica-para-la-Investigacion/Herramienta1-trayectoriaParabolica.html" loading="lazy"></iframe>
+            </div>
+
+            <div class="tool-card">
+                <div class="tool-title">Módulo 2: Análisis Estructural de Vigas</div>
+                <iframe class="iframe-sub" src="https://santid99.github.io/Informatica-para-la-Investigacion/Herramienta2_viga.html" loading="lazy"></iframe>
+            </div>
+
+            <div class="tool-card">
+                <div class="tool-title">Módulo 3: Ciclo de Potencia Rankine</div>
+                <iframe class="iframe-sub" src="https://santid99.github.io/Informatica-para-la-Investigacion/Herramienta3-CicloRankine.html" loading="lazy"></iframe>
+            </div>
+
+            <div class="tool-card">
+                <div class="tool-title">Módulo 4: Sistema Masa-Resorte-Amortiguador</div>
+                <iframe class="iframe-sub" src="https://santid99.github.io/Informatica-para-la-Investigacion/Herramienta4-MasaResorteAmorti.html" loading="lazy"></iframe>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
