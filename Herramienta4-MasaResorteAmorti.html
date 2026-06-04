@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta 4: Simulador de Vibraciones Dinámicas</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: #0b0f19;
+            color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: #131a2c;
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid #1e293b;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        h2 { color: #deff9a; margin-top: 0; border-bottom: 2px solid #1e293b; padding-bottom: 10px; font-weight: 500; }
+        
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        /* PANEL INTERACTIVO ESTILO CALCULADORA */
+        .calculator-panel {
+            background: #0f1423;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #232e46;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .calc-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .calc-group label { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold; }
+        .calc-display-wrapper {
+            display: flex;
+            align-items: center;
+            background: #070a12;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .calc-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 12px;
+            color: #deff9a;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: right;
+            outline: none;
+        }
+        .calc-btn {
+            background: #1e293b;
+            border: none;
+            color: #f1f5f9;
+            font-size: 18px;
+            width: 40px;
+            height: 46px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .calc-btn:hover { background: #334155; }
+        .calc-btn:active { background: #475569; }
+
+        /* AREA DE LIENZOS */
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .canvas-row-top {
+            background: #0f1423;
+            border-radius: 12px;
+            border: 1px solid #1e293b;
+            padding: 15px;
+            text-align: center;
+        }
+        .canvas-row-bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .canvas-box {
+            background: #0f1423;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+        .canvas-box h4 { margin: 0 0 10px 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; }
+        canvas { background: #070a12; border-radius: 8px; border: 1px solid #1e293b; max-width: 100%; }
+
+        .kpi-footer {
+            background: #0f1423;
+            border: 1px solid #deff9a;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-around;
+        }
+        .kpi-text { font-size: 13px; color: #cbd5e1; }
+        .kpi-text span { color: #deff9a; font-family: monospace; font-weight: bold; font-size: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Herramienta 4: Analizador Vibratorio Dinámico (1 GDL - Forzado Armónico)</h2>
+    
+    <div class="grid-layout">
+        <div class="calculator-panel">
+            <div style="color: #64748b; font-size: 12px; font-weight: bold; text-align: center; border-bottom: 1px solid #232e46; padding-bottom: 8px;">ENTRADA DE PARÁMETROS</div>
+            
+            <div class="calc-group">
+                <label>Masa (m) [kg]</label>
+                <div class="calc-display-wrapper">
+                    <button class="calc-btn" onclick="stepVal('in-m', -1)">-</button>
+                    <input type="number" id="in-m" class="calc-input" value="10.0" step="0.5" oninput="validarYActualizar()">
+                    <button class="calc-btn" onclick="stepVal('in-m', 1)">+</button>
+                </div>
+            </div>
+
+            <div class="calc-group">
+                <label>Rigidez del Resorte (k) [N/m]</label>
+                <div class="calc-display-wrapper">
+                    <button class="calc-btn" onclick="stepVal('in-k', -10)">-</button>
+                    <input type="number" id="in-k" class="calc-input" value="250.0" step="5" oninput="validarYActualizar()">
+                    <button class="calc-btn" onclick="stepVal('in-k', 10)">+</button>
+                </div>
+            </div>
+
+            <div class="calc-group">
+                <label>Amortiguamiento (c) [N·s/m]</label>
+                <div class="calc-display-wrapper">
+                    <button class="calc-btn" onclick="stepVal('in-c', -0.5)">-</button>
+                    <input type="number" id="in-c" class="calc-input" value="4.0" step="0.2" oninput="validarYActualizar()">
+                    <button class="calc-btn" onclick="stepVal('in-c', 0.5)">+</button>
+                </div>
+            </div>
+
+            <div class="calc-group">
+                <label>Frecuencia de Excitación (ω) [rad/s]</label>
+                <div class="calc-display-wrapper">
+                    <button class="calc-btn" onclick="stepVal('in-w', -0.2)">-</button>
+                    <input type="number" id="in-w" class="calc-input" value="5.0" step="0.1" oninput="validarYActualizar()">
+                    <button class="calc-btn" onclick="stepVal('in-w', 0.2)">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="workspace">
+            <div class="canvas-row-top">
+                <div style="color: #94a3b8; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold;">Animación Mecánica en Tiempo Real (Sistema Físico)</div>
+                <canvas id="canvasAnim" width="900" height="150"></canvas>
+            </div>
+
+            <div class="canvas-row-bottom">
+                <div class="canvas-box">
+                    <h4>Respuesta Temporal Posición vs Tiempo $x(t)$</h4>
+                    <canvas id="canvasXT" width="440" height="260"></canvas>
+                </div>
+                <div class="canvas-box">
+                    <h4>Curva de Resonancia (Factor de Magnificación $M$)</h4>
+                    <canvas id="canvasRes" width="440" height="260"></canvas>
+                </div>
+            </div>
+
+            <div class="kpi-footer">
+                <div class="kpi-text">FRECUENCIA NATURAL (ωn): <span id="kpi-wn">0.00 rad/s</span></div>
+                <div class="kpi-text">FACTOR DE AMORTIGUAMIENTO (ζ): <span id="kpi-zeta">0.00</span></div>
+                <div class="kpi-text">MAGNIFICACIÓN DINÁMICA (M): <span id="kpi-m">0.00</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Parámetros Físicos del Sistema Globales
+let m = 10.0;
+let k = 250.0;
+let c = 4.0;
+let w = 5.0;
+
+// Variables de Simulación de Tiempo Real
+let tiempo = 0;
+let historialX = [];
+const maxHistorial = 200;
+
+function stepVal(id, delta) {
+    const el = document.getElementById(id);
+    let val = parseFloat(el.value) + delta;
+    if (val < 0.1) val = 0.1; // Evitar indeterminaciones o ceros peligrosos
+    el.value = val.toFixed(1);
+    validarYActualizar();
+}
+
+function validarYActualizar() {
+    m = Math.max(0.1, parseFloat(document.getElementById('in-m').value) || 1);
+    k = Math.max(0.1, parseFloat(document.getElementById('in-k').value) || 1);
+    c = Math.max(0.0, parseFloat(document.getElementById('in-c').value) || 0);
+    w = Math.max(0.1, parseFloat(document.getElementById('in-w').value) || 1);
+    
+    recalcularYRenderizar();
+}
+
+// Variables Calculadas de Salida Estructural
+let wn, zeta, M, amplitud;
+
+function recalcularYRenderizar() {
+    wn = Math.sqrt(k / m);
+    zeta = c / (2 * Math.sqrt(k * m));
+    let r = w / wn;
+    
+    // Cálculo analítico del factor de magnificación dinámico M
+    let denom = Math.sqrt(Math.pow(1 - r*r, 2) + Math.pow(2 * zeta * r, 2));
+    M = denom !== 0 ? 1 / denom : 50; // Techo de seguridad si el amortiguamiento es nulo
+    
+    // Amplitud de vibración forzada escalada de forma demostrativa
+    amplitud = 25 * M; 
+
+    // Actualizar Panel KPI
+    document.getElementById('kpi-wn').innerText = wn.toFixed(2) + " rad/s";
+    document.getElementById('kpi-zeta').innerText = zeta.toFixed(3);
+    document.getElementById('kpi-m').innerText = M.toFixed(2);
+
+    // Redibujar gráficos estáticos
+    dibujarCurvaResonancia();
+}
+
+// --- ANIMACIÓN EN TIEMPO REAL DEL SISTEMA MECÁNICO ---
+function loopAnimacion() {
+    tiempo += 0.05;
+    
+    // Ecuación de respuesta en régimen permanente x(t) = X * cos(w*t - phi)
+    let x_actual = amplitud * Math.cos(w * tiempo);
+    
+    // Guardar para la gráfica temporal x(t)
+    historialX.push(x_actual);
+    if(historialX.length > maxHistorial) historialX.shift();
+
+    renderSistemaFisico(x_actual);
+    dibujarRespuestaTemporal();
+
+    requestAnimationFrame(loopAnimacion);
+}
+
+function renderSistemaFisico(x) {
+    const canvas = document.getElementById('canvasAnim');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    let x_basa = 80;
+    let y_eje = canvas.height / 2;
+    let x_masa = 350 + x; // Posición de equilibrio central modificada por el desplazamiento dinámico x
+
+    // 1. Dibujar Soporte/Pared Fija Izquierda
+    ctx.strokeStyle = "#475569"; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(x_basa, y_eje - 40); ctx.lineTo(x_basa, y_eje + 40); ctx.stroke();
+    // Rayado de pared
+    ctx.lineWidth = 1;
+    for(let i = -40; i <= 40; i += 8) {
+        ctx.beginPath(); ctx.moveTo(x_basa, y_eje + i); ctx.lineTo(x_basa - 8, y_eje + i - 4); ctx.stroke();
+    }
+
+    // 2. Dibujar el Resorte Vectorial k (Estructura en zig-zag regular)
+    ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 2; ctx.beginPath();
+    let vueltas = 12;
+    let dist_resorte = (x_masa - 30) - x_basa;
+    let paso = dist_resorte / vueltas;
+    ctx.moveTo(x_basa, y_eje - 15);
+    for(let i=0; i <= vueltas; i++) {
+        let px = x_basa + i * paso;
+        let py = y_eje - 15 + (i % 2 === 0 ? -15 : 15);
+        if(i === 0) ctx.moveTo(x_basa, y_eje - 15);
+        else if(i === vueltas) ctx.lineTo(x_masa, y_eje - 15);
+        else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.fillStyle = "#f59e0b"; ctx.font = "10px sans-serif"; ctx.fillText(`Resorte k`, x_basa + dist_resorte/2 - 20, y_eje - 36);
+
+    // 3. Dibujar el Amortiguador c (Cilindro + Pistón deslizante)
+    let y_am = y_eje + 20;
+    ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 2;
+    // Línea soporte del pistón
+    ctx.beginPath(); ctx.moveTo(x_basa, y_am); ctx.lineTo(x_masa - 40, y_am); ctx.stroke();
+    // Cabeza del pistón
+    ctx.beginPath(); ctx.moveTo(x_masa - 40, y_am - 8); ctx.lineTo(x_masa - 40, y_am + 8); ctx.stroke();
+    // Carcasa o camisa cilíndrica fija a la masa
+    ctx.beginPath();
+    ctx.moveTo(x_masa, y_am); ctx.lineTo(x_masa - 25, y_am); // Vástago derecho
+    ctx.moveTo(x_masa - 25, y_am - 12); ctx.lineTo(x_masa - 55, y_am - 12); // Pared superior
+    ctx.moveTo(x_masa - 25, y_am + 12); ctx.lineTo(x_masa - 55, y_am + 12); // Pared inferior
+    ctx.stroke();
+    ctx.fillStyle = "#38bdf8"; ctx.fillText(`Amortiguador c`, x_basa + dist_resorte/2 - 35, y_am + 25);
+
+    // 4. Dibujar la Masa m (Bloque sólido rectangular flotante con ruedas)
+    let w_masa = 70, h_masa = 60;
+    ctx.fillStyle = "#1e293b"; ctx.strokeStyle = "#deff9a"; ctx.lineWidth = 2;
+    ctx.fillRect(x_masa, y_eje - h_masa/2, w_masa, h_masa);
+    ctx.strokeRect(x_masa, y_eje - h_masa/2, w_masa, h_masa);
+    
+    // Rótulo interior de la masa
+    ctx.fillStyle = "#fff"; ctx.font = "bold 11px sans-serif";
+    ctx.fillText(`MASA m`, x_masa + 12, y_eje + 4);
+
+    // Dibujar suelo de rodadura de referencia
+    ctx.strokeStyle = "#334155"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x_basa, y_eje + h_masa/2); ctx.lineTo(canvas.width - 50, y_eje + h_masa/2); ctx.stroke();
+}
+
+// --- GRÁFICA DE RESPUESTA TEMPORAL x(t) ---
+function dibujarRespuestaTemporal() {
+    const canvas = document.getElementById('canvasXT');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const ox = 45, oy = canvas.height / 2, w = 370, h = 100;
+    
+    // Ejes cartesianos centrados en y=0
+    ctx.strokeStyle = "#334155"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(ox, oy - h); ctx.lineTo(ox, oy + h); ctx.stroke(); // Eje Y
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + w, oy); ctx.stroke();     // Eje X (Tiempo)
+
+    ctx.fillStyle = "#64748b"; ctx.font = "10px sans-serif";
+    ctx.fillText("t", ox + w - 10, oy + 14);
+    ctx.fillText("x(t)", ox - 35, oy - h + 10);
+
+    if(historialX.length < 2) return;
+
+    // Trazar onda senoidal en base al historial acumulado en tiempo real
+    ctx.strokeStyle = "#4ade80"; ctx.lineWidth = 2; ctx.beginPath();
+    let pasoX = w / maxHistorial;
+    for(let i=0; i<historialX.length; i++) {
+        let px = ox + i * pasoX;
+        let py = oy - (historialX[i] * 0.8); // Atenuar amplitud para escalado óptico
+        if(i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+}
+
+// --- CURVA DE RESONANCIA / FACTOR DE MAGNIFICACIÓN M ---
+function dibujarCurvaResonancia() {
+    const canvas = document.getElementById('canvasRes');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const ox = 45, oy = 220, w = 370, h = 180;
+    
+    // Ejes
+    ctx.strokeStyle = "#334155"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(ox, oy - h); ctx.lineTo(ox, oy); ctx.lineTo(ox + w, oy); ctx.stroke();
+
+    ctx.fillStyle = "#64748b"; ctx.font = "10px sans-serif";
+    ctx.fillText("Frecuencia r = ω/ωn", ox + w - 110, oy + 15);
+    ctx.fillText("Magnificación M", ox - 38, oy - h + 10);
+
+    // Trazar curva analítica completa barriendo la relación de frecuencias r de 0 a 3
+    ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 2; ctx.beginPath();
+    let max_r = 3.0;
+    let primerPunto = true;
+
+    for (let i = 0; i <= 200; i++) {
+        let r_local = (i / 200) * max_r;
+        let denom_local = Math.sqrt(Math.pow(1 - r_local*r_local, 2) + Math.pow(2 * zeta * r_local, 2));
+        let M_local = denom_local !== 0 ? 1 / denom_local : 10;
+
+        let px = ox + (r_local / max_r) * w;
+        let py = oy - (M_local / 6) * h; // Escalar el factor M al alto del gráfico
+
+        // Controlar que el trazado no se desborde del lienzo superior
+        if(py < oy - h) py = oy - h;
+
+        if (primerPunto) { ctx.moveTo(px, py); primerPunto = false; }
+        else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // Dibujar marcador móvil vertical indicando dónde se encuentra la frecuencia de operación seleccionada (ω)
+    let r_actual = w / wn;
+    let px_actual = ox + (r_actual / max_r) * w;
+    let py_actual = oy - (M / 6) * h;
+    if(py_actual < oy - h) py_actual = oy - h;
+
+    if(px_actual <= ox + w) {
+        ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(px_actual, oy); ctx.lineTo(px_actual, py_actual); ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = "#f43f5e"; ctx.beginPath(); ctx.arc(px_actual, py_actual, 5, 0, 2 * Math.PI); ctx.fill();
+    }
+}
+
+// Inicialización del motor y arranque del bucle continuo
+validarYActualizar();
+loopAnimacion();
+</script>
+
+</body>
+</html>
