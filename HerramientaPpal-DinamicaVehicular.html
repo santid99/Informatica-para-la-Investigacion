@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telemetria para EVs</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: #0b0f19;
+            color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #131a2c;
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid #1e293b;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        h2 { color: #deff9a; margin-top: 0; border-bottom: 2px solid #1e293b; padding-bottom: 10px; font-weight: 500; }
+        
+        .main-layout {
+            display: grid;
+            grid-template-columns: 310px 1fr;
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .sidebar-controls {
+            background: #0f1423;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #232e46;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+        .section-title {
+            color: #64748b;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            width: 100%;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 4px;
+            margin-top: 5px;
+        }
+        .calc-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 100%;
+        }
+        .calc-group label { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold; }
+        .calc-display-wrapper {
+            display: flex;
+            align-items: center;
+            background: #070a12;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .calc-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 6px 10px;
+            color: #deff9a;
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: right;
+            outline: none;
+        }
+        .calc-btn {
+            background: #1e293b;
+            border: none;
+            color: #f1f5f9;
+            font-size: 14px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+        }
+
+        .sl-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            width: 100%;
+        }
+        .sl-group label { font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: bold; display: flex; justify-content: space-between;}
+        .sl-group label span { color: #38bdf8; font-family: monospace; }
+        .sl-input {
+            width: 100%;
+            background: #1e293b;
+            height: 6px;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .pedals-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            background: #070a12;
+            padding: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #232e46;
+        }
+        .pedal-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .pedal-box span { font-size: 9px; font-weight: bold; text-transform: uppercase; }
+        .pedal-slider {
+            margin: 0;
+            appearance: slider-vertical;
+            width: 20px;
+            height: 70px;
+            background: #1e293b;
+            cursor: pointer;
+        }
+
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .panel-box {
+            background: #0f1423;
+            border-radius: 12px;
+            border: 1px solid #1e293b;
+            padding: 12px;
+            position: relative;
+        }
+        .panel-box h4 { margin: 0 0 8px 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; text-align: left; }
+        
+        .axis-control {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 10px;
+            color: #64748b;
+        }
+        .axis-input {
+            background: #070a12;
+            border: 1px solid #334155;
+            color: #38bdf8;
+            font-family: monospace;
+            font-weight: bold;
+            width: 45px;
+            font-size: 11px;
+            text-align: center;
+            border-radius: 4px;
+            padding: 2px;
+            outline: none;
+        }
+
+        canvas { background: #070a12; border-radius: 8px; border: 1px solid #1e293b; display: block; }
+
+        .kpi-row {
+            background: #0f1423;
+            border: 1px solid #deff9a;
+            padding: 12px;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+        }
+        .kpi-card { font-size: 10px; color: #94a3b8; text-align: center; text-transform: uppercase; font-weight: bold; border-right: 1px solid #1e293b; }
+        .kpi-card:last-child { border-right: none; }
+        .kpi-card span { color: #deff9a; font-family: monospace; font-weight: bold; font-size: 13px; display: block; margin-top: 4px; text-transform: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Interfaz Gráfica de Telemetría para Coches Eléctricos con Trayectoria Variable</h2>
+    
+    <div class="main-layout">
+        <div class="sidebar-controls">
+            <div class="section-title">Parámetros del Coche</div>
+            <div class="calc-group">
+                <label>Masa (m) [kg]</label>
+                <div class="calc-display-wrapper">
+                    <button class="calc-btn" onclick="stepVal('in-m', -100)">-</button>
+                    <input type="number" id="in-m" class="calc-input" value="1500" oninput="inicializarCircuitoFlexible()">
+                    <button class="calc-btn" onclick="stepVal('in-m', 100)">+</button>
+                </div>
+            </div>
+            <div class="calc-group">
+                <label>Coef. Aero (Cd)</label>
+                <div class="calc-display-wrapper">
+                    <button class="calc-btn" onclick="stepVal('in-cd', -0.01)">-</button>
+                    <input type="number" id="in-cd" class="calc-input" value="0.25" step="0.01" oninput="inicializarCircuitoFlexible()">
+                    <button class="calc-btn" onclick="stepVal('in-cd', 0.01)">+</button>
+                </div>
+            </div>
+
+            <div class="section-title">Diseño de Tramos (Longitud)</div>
+            <div class="calc-group">
+                <label>Longitud T1 [m]</label>
+                <div class="calc-display-wrapper">
+                    <button class="calc-btn" onclick="stepVal('len-t1', -10)">-</button>
+                    <input type="number" id="len-t1" class="calc-input" value="100" min="10" oninput="inicializarCircuitoFlexible()">
+                    <button class="calc-btn" onclick="stepVal('len-t1', 10)">+</button>
+                </div>
+            </div>
+            <div class="calc-group">
+                <label>Longitud T2 [m]</label>
+                <div class="calc-display-wrapper">
+                    <button class="calc-btn" onclick="stepVal('len-t2', -10)">-</button>
+                    <input type="number" id="len-t2" class="calc-input" value="50" min="10" oninput="inicializarCircuitoFlexible()">
+                    <button class="calc-btn" onclick="stepVal('len-t2', 10)">+</button>
+                </div>
+            </div>
+            <div class="calc-group">
+                <label>Longitud T3 [m]</label>
+                <div class="calc-display-wrapper">
+                    <button class="calc-btn" onclick="stepVal('len-t3', -10)">-</button>
+                    <input type="number" id="len-t3" class="calc-input" value="150" min="10" oninput="inicializarCircuitoFlexible()">
+                    <button class="calc-btn" onclick="stepVal('len-t3', 10)">+</button>
+                </div>
+            </div>
+
+            <div class="section-title">Inclinaciones (%)</div>
+            <div class="sl-group">
+                <label>Pendiente T1 <span id="lbl-t1">0%</span></label>
+                <input type="range" id="sl-t1" class="sl-input" min="-25" max="25" value="0" oninput="inicializarCircuitoFlexible()">
+            </div>
+            <div class="sl-group">
+                <label>Pendiente T2 <span id="lbl-t2">12%</span></label>
+                <input type="range" id="sl-t2" class="sl-input" min="-25" max="25" value="12" oninput="inicializarCircuitoFlexible()">
+            </div>
+            <div class="sl-group">
+                <label>Pendiente T3 <span id="lbl-t3">-15%</span></label>
+                <input type="range" id="sl-t3" class="sl-input" min="-25" max="25" value="-15" oninput="inicializarCircuitoFlexible()">
+            </div>
+
+            <div class="section-title">Controles Activos</div>
+            <div class="pedals-container">
+                <div class="pedal-box">
+                    <span style="color: #ef4444;">Freno</span>
+                    <input type="range" id="pedalFreno" class="pedal-slider" min="0" max="100" value="0" oninput="procesarFisicaVariable();">
+                </div>
+                <div class="pedal-box">
+                    <span style="color: #10b981;">Acel.</span>
+                    <input type="range" id="pedalAcel" class="pedal-slider" min="0" max="100" value="50" oninput="procesarFisicaVariable();">
+                </div>
+            </div>
+        </div>
+
+        <div class="workspace">
+            <div class="panel-box" style="border: 1px solid #deff9a;">
+                <h4>Perfil Adaptativo de la Pista <span id="lbl-total-len" style="color:#deff9a; font-family:monospace;"></span> (Arrastra el coche)</h4>
+                <div class="axis-control">Límite Eje Altura Máx (±): <input type="number" id="maxH_input" class="axis-input" value="30" oninput="renderizarLienzos()"> m</div>
+                <canvas id="canvasTrack" width="1020" height="120" style="cursor: ew-resize;"></canvas>
+            </div>
+
+            <div class="panel-box">
+                <h4>Velocidad Instantánea v(x)</h4>
+                <div class="axis-control">Límite Eje V Máx: <input type="number" id="maxV_input" class="axis-input" value="140" oninput="renderizarLienzos()"> km/h</div>
+                <canvas id="canvasV" width="1020" height="120"></canvas>
+            </div>
+
+            <div class="panel-box">
+                <h4>Energía del Sistema: Consumida (Rojo) vs Regenerada (Verde)</h4>
+                <div class="axis-control">Límite Eje E Máx: <input type="number" id="maxE_input" class="axis-input" value="600" oninput="renderizarLienzos()"> Wh</div>
+                <canvas id="canvasE" width="1020" height="120"></canvas>
+            </div>
+
+            <div class="kpi-row">
+                <div class="kpi-card">Ubicación: <span id="kpi-pos">0.0 m</span></div>
+                <div class="kpi-card">Velocidad: <span id="kpi-vel">0.0 km/h</span></div>
+                <div class="kpi-card">Fuerza Motor: <span id="kpi-fmotor">0 N</span></div>
+                <div class="kpi-card">F. Resistencia Aire: <span id="kpi-faero">0 N</span></div>
+                <div class="kpi-card">F. Gravedad: <span id="kpi-fgrade">0 N</span></div>
+                <div class="kpi-card" style="color: #38bdf8;">Energía Mecánica (Et): <span id="kpi-etotal" style="color: #38bdf8;">0.0 kJ</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let m = 1500, cd = 0.25, effRegen = 0.85;
+let cocheX = 0; 
+let totalLen = 300;
+let l1 = 100, l2 = 50, l3 = 150;
+
+let puntosPerfil = [];
+let telemetriaV = [];
+let telemetriaE_cons = [];
+let telemetriaE_reg = [];
+let telemetriaH = [];
+
+function inicializarCircuitoFlexible() {
+    m = Math.max(200, parseFloat(document.getElementById('in-m').value) || 1500);
+    cd = Math.max(0.05, parseFloat(document.getElementById('in-cd').value) || 0.25);
+    
+    l1 = Math.max(10, parseInt(document.getElementById('len-t1').value) || 100);
+    l2 = Math.max(10, parseInt(document.getElementById('len-t2').value) || 50);
+    l3 = Math.max(10, parseInt(document.getElementById('len-t3').value) || 150);
+    totalLen = l1 + l2 + l3;
+
+    document.getElementById('lbl-total-len').innerText = `[Longitud Total: ${totalLen}m]`;
+
+    let p1 = parseInt(document.getElementById('sl-t1').value);
+    let p2 = parseInt(document.getElementById('sl-t2').value);
+    let p3 = parseInt(document.getElementById('sl-t3').value);
+
+    document.getElementById('lbl-t1').innerText = (p1 >= 0 ? '+' : '') + p1 + '%';
+    document.getElementById('lbl-t2').innerText = (p2 >= 0 ? '+' : '') + p2 + '%';
+    document.getElementById('lbl-t3').innerText = (p3 >= 0 ? '+' : '') + p3 + '%';
+
+    puntosPerfil = [];
+    let h_acumulada = 0;
+
+    for(let x=0; x<=l1; x++) {
+        h_acumulada += (p1 / 100);
+        puntosPerfil.push({x: x, grade: p1, h: h_acumulada});
+    }
+    for(let x=1; x<=l2; x++) {
+        h_acumulada += (p2 / 100);
+        puntosPerfil.push({x: l1 + x, grade: p2, h: h_acumulada});
+    }
+    for(let x=1; x<=l3; x++) {
+        h_acumulada += (p3 / 100);
+        puntosPerfil.push({x: l1 + l2 + x, grade: p3, h: h_acumulada});
+    }
+
+    if (cocheX > totalLen) cocheX = totalLen;
+
+    procesarFisicaVariable();
+}
+
+function procesarFisicaVariable() {
+    let accelPedal = parseFloat(document.getElementById('pedalAcel').value) / 100;
+    let frenoPedal = parseFloat(document.getElementById('pedalFreno').value) / 100;
+
+    telemetriaV = [];
+    telemetriaE_cons = [];
+    telemetriaE_reg = [];
+    telemetriaH = [];
+
+    let v_act = 50.0 / 3.6; 
+    let e_cons_acum = 0;
+    let e_reg_acum = 0;
+    let dt = 0.1;
+
+    for(let i=0; i<puntosPerfil.length; i++) {
+        let p = puntosPerfil[i];
+        let alfa = Math.atan(p.grade / 100);
+
+        let F_aero = 0.5 * 1.225 * cd * 2.2 * v_act * v_act;
+        let F_rod = 0.012 * m * 9.81 * Math.cos(alfa);
+        let F_pende = m * 9.81 * Math.sin(alfa);
+
+        let F_motor = accelPedal * 5500;
+        let F_freno_mecanico = frenoPedal * 7500;
+
+        // Balance neto de fuerzas coexistentes en tiempo real
+        let F_totales = F_motor - F_freno_mecanico - F_aero - F_rod - F_pende;
+        let aceleracion = F_totales / m;
+
+        v_act += aceleracion * dt;
+        if(v_act < 2.0 / 3.6) v_act = 2.0 / 3.6;
+
+        let potencia_W = F_motor * v_act;
+        if (potencia_W > 0) e_cons_acum += (potencia_W * dt) / 3600000;
+
+        if (p.grade < 0 || frenoPedal > 0) {
+            let pot_recup = Math.abs(F_pende + F_freno_mecanico * 0.4) * v_act;
+            e_reg_acum += (pot_recup * dt * effRegen) / 3600000;
+        }
+
+        telemetriaV.push(v_act * 3.6);
+        telemetriaE_cons.push(e_cons_acum * 1000); 
+        telemetriaE_reg.push(e_reg_acum * 1000);
+        telemetriaH.push(p.h);
+    }
+
+    renderizarLienzos();
+}
+
+function renderizarLienzos() {
+    let ox = 45, w_util = 940; 
+    dibujarCircuitoFlexible(ox, w_util);
+    dibujarGraficaV(ox, w_util);
+    dibujarGraficaE(ox, w_util);
+    actualizarSCADAPanel();
+}
+
+function dibujarCircuitoFlexible(ox, w) {
+    const canvas = document.getElementById('canvasTrack');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    
+    let factorX = w / totalLen;
+    let maxH = parseFloat(document.getElementById('maxH_input').value) || 30; 
+    let cy_centro = canvas.height / 2 + 10; 
+
+    ctx.strokeStyle = "#475569"; ctx.lineWidth = 4; ctx.beginPath();
+    for(let i=0; i<puntosPerfil.length; i++) {
+        let p = puntosPerfil[i];
+        let py = cy_centro - (p.h / maxH) * (canvas.height * 0.4);
+        ctx.lineTo(ox + p.x * factorX, py);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(51, 65, 85, 0.3)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(ox + l1 * factorX, 5); ctx.lineTo(ox + l1 * factorX, canvas.height - 5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox + (l1 + l2) * factorX, 5); ctx.lineTo(ox + (l1 + l2) * factorX, canvas.height - 5); ctx.stroke();
+    ctx.setLineDash([]);
+
+    let idx = Math.round(cocheX);
+    if(idx >= puntosPerfil.length) idx = puntosPerfil.length - 1;
+    let p_coche = puntosPerfil[idx];
+    let cx = ox + p_coche.x * factorX;
+    let cy = cy_centro - (p_coche.h / maxH) * (canvas.height * 0.4);
+
+    ctx.fillStyle = "#deff9a"; ctx.fillRect(cx - 12, cy - 12, 24, 9);
+    ctx.fillRect(cx - 7, cy - 17, 13, 6);
+    ctx.fillStyle = "#1e293b";
+    ctx.beginPath(); ctx.arc(cx - 7, cy - 2, 3.5, 0, 2*Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 7, cy - 2, 3.5, 0, 2*Math.PI); ctx.fill();
+}
+
+function dibujarGraficaV(ox, w) {
+    const canvas = document.getElementById('canvasV');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let oy = 105, h = 90;
+    let maxV = parseFloat(document.getElementById('maxV_input').value) || 140;
+
+    ctx.strokeStyle = "#1e293b"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(ox, oy - h); ctx.lineTo(ox, oy); ctx.lineTo(ox + w, oy); ctx.stroke();
+
+    ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 2.5; ctx.beginPath();
+    for(let i=0; i<telemetriaV.length; i++) {
+        ctx.lineTo(ox + (i / totalLen) * w, oy - Math.min(1, telemetriaV[i] / maxV) * h);
+    }
+    ctx.stroke();
+
+    let px_cursor = ox + (cocheX / totalLen) * w;
+    ctx.strokeStyle = "rgba(222, 255, 154, 0.5)"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(px_cursor, oy); ctx.lineTo(px_cursor, oy - h); ctx.stroke();
+}
+
+function dibujarGraficaE(ox, w) {
+    const canvas = document.getElementById('canvasE');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let oy = 105, h = 90;
+    let maxE = parseFloat(document.getElementById('maxE_input').value) || 600;
+
+    ctx.strokeStyle = "#1e293b"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(ox, oy - h); ctx.lineTo(ox, oy); ctx.lineTo(ox + w, oy); ctx.stroke();
+
+    ctx.strokeStyle = "#f43f5e"; ctx.lineWidth = 2; ctx.beginPath();
+    for(let i=0; i<telemetriaE_cons.length; i++) {
+        ctx.lineTo(ox + (i / totalLen) * w, oy - Math.min(1, telemetriaE_cons[i] / maxE) * h);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = "#10b981"; ctx.lineWidth = 2; ctx.beginPath();
+    for(let i=0; i<telemetriaE_reg.length; i++) {
+        ctx.lineTo(ox + (i / totalLen) * w, oy - Math.min(1, telemetriaE_reg[i] / maxE) * h);
+    }
+    ctx.stroke();
+
+    let px_cursor = ox + (cocheX / totalLen) * w;
+    ctx.strokeStyle = "rgba(222, 255, 154, 0.5)"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(px_cursor, oy); ctx.lineTo(px_cursor, oy - h); ctx.stroke();
+}
+
+function stepVal(id, delta) {
+    const el = document.getElementById(id);
+    let v = parseFloat(el.value) + delta;
+    if(v < 0) v = 0;
+    el.value = id === 'in-cd' ? v.toFixed(2) : Math.round(v);
+    inicializarCircuitoFlexible();
+}
+
+function actualizarSCADAPanel() {
+    let idx = Math.round(cocheX);
+    if(idx >= puntosPerfil.length) idx = puntosPerfil.length - 1;
+    
+    let v_act = telemetriaV[idx];
+    let p_grade = puntosPerfil[idx].grade;
+    let h_act = telemetriaH[idx];
+
+    let alfa = Math.atan(p_grade / 100);
+    let F_aero = 0.5 * 1.225 * cd * 2.2 * Math.pow(v_act/3.6, 2);
+    let F_pende = m * 9.81 * Math.sin(alfa);
+
+    let accelPedal = parseFloat(document.getElementById('pedalAcel').value) / 100;
+    let frenoPedal = parseFloat(document.getElementById('pedalFreno').value) / 100;
+    let F_mot = (accelPedal * 5500) - (frenoPedal * 7500);
+
+    let v_ms = v_act / 3.6;
+    let E_cinetica = 0.5 * m * v_ms * v_ms;
+    let E_potencial = m * 9.81 * h_act;
+    let E_total_kJ = (E_cinetica + E_potencial) / 1000;
+
+    document.getElementById('kpi-pos').innerText = cocheX.toFixed(1) + " m";
+    document.getElementById('kpi-vel').innerText = v_act.toFixed(1) + " km/h";
+    document.getElementById('kpi-fmotor').innerText = Math.round(F_mot) + " N";
+    document.getElementById('kpi-faero').innerText = Math.round(F_aero) + " N";
+    document.getElementById('kpi-fgrade').innerText = Math.round(F_pende) + " N";
+    document.getElementById('kpi-etotal').innerText = E_total_kJ.toFixed(1) + " kJ";
+}
+
+const trackCanvas = document.getElementById('canvasTrack');
+let draggingCoche = false;
+
+function handleMove(e) {
+    const rect = trackCanvas.getBoundingClientRect();
+    let clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    let x_rel = clientX - rect.left - 45;
+    let pct = x_rel / 940;
+    cocheX = Math.min(totalLen, Math.max(0, pct * totalLen));
+    renderizarLienzos();
+}
+
+trackCanvas.addEventListener('mousedown', (e) => { draggingCoche = true; handleMove(e); });
+window.addEventListener('mousemove', (e) => { if (draggingCoche) handleMove(e); });
+window.addEventListener('mouseup', () => draggingCoche = false);
+
+inicializarCircuitoFlexible();
+</script>
+
+</body>
+</html>
