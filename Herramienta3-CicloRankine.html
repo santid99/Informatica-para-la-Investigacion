@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta 3: Simulador Rankine con Acoplamiento Termodinámico Total</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: #0b0f19;
+            color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+        }
+        .container {
+            max-width: 1350px;
+            margin: 0 auto;
+            background: #131a2c;
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid #1e293b;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        h2 { color: #deff9a; margin-top: 0; border-bottom: 2px solid #1e293b; padding-bottom: 10px; font-weight: 500; }
+        
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        /* MANDOS RADIALES (KNOBS) */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: #0f1423;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #232e46;
+            align-items: center;
+        }
+        .knob-container {
+            text-align: center;
+            position: relative;
+            width: 160px;
+        }
+        .knob-container h3 { font-size: 11px; color: #94a3b8; text-transform: uppercase; margin: 0 0 5px 0; }
+        .knob-svg { cursor: pointer; transform: rotate(-90deg); }
+        .knob-value {
+            position: absolute;
+            top: 58%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: bold;
+            color: #deff9a;
+            text-align: center;
+        }
+        .knob-unit { font-size: 10px; color: #64748b; display: block; margin-top: 1px;}
+
+        /* LIENZOS GRÁFICOS */
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .canvas-row-top {
+            background: #0f1423;
+            border-radius: 12px;
+            border: 1px solid #1e293b;
+            padding: 15px;
+            text-align: center;
+        }
+        .canvas-row-bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .canvas-box {
+            background: #0f1423;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+        .canvas-box h4 { margin: 0 0 10px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; }
+        canvas { background: #070a12; border-radius: 8px; border: 1px solid #1e293b; max-width: 100%; }
+
+        .kpi-footer {
+            background: #0f1423;
+            border: 1px solid #deff9a;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-around;
+        }
+        .kpi-text { font-size: 13px; color: #cbd5e1; }
+        .kpi-text span { color: #deff9a; font-family: monospace; font-weight: bold; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Herramienta 3: Analizador Rankine Avanzado (Física Acoplada de Presión y Temperatura)</h2>
+    
+    <div class="grid-layout">
+        <div class="control-panel">
+            <div class="knob-container" id="container-high">
+                <h3>P_alta (Caldera)</h3>
+                <svg class="knob-svg" width="110" height="110" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="#1e293b" stroke-width="8" fill="none" />
+                    <circle id="arc-high" cx="50" cy="50" r="40" stroke="#f43f5e" stroke-width="8" fill="none" stroke-dasharray="251.2" stroke-dashoffset="251.2" />
+                    <circle id="dot-high" cx="90" cy="50" r="6" fill="#fff" />
+                </svg>
+                <div class="knob-value"><span id="val-high">10.0</span><span class="knob-unit">MPa</span></div>
+            </div>
+
+            <div class="knob-container" id="container-temp">
+                <h3>T_máx (Sobrecalent.)</h3>
+                <svg class="knob-svg" width="110" height="110" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="#1e293b" stroke-width="8" fill="none" />
+                    <circle id="arc-temp" cx="50" cy="50" r="40" stroke="#eab308" stroke-width="8" fill="none" stroke-dasharray="251.2" stroke-dashoffset="251.2" />
+                    <circle id="dot-temp" cx="90" cy="50" r="6" fill="#fff" />
+                </svg>
+                <div class="knob-value"><span id="val-temp">500</span><span class="knob-unit">°C</span></div>
+            </div>
+
+            <div class="knob-container" id="container-low">
+                <h3>P_baja (Condensador)</h3>
+                <svg class="knob-svg" width="110" height="110" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="#1e293b" stroke-width="8" fill="none" />
+                    <circle id="arc-low" cx="50" cy="50" r="40" stroke="#38bdf8" stroke-width="8" fill="none" stroke-dasharray="251.2" stroke-dashoffset="251.2" />
+                    <circle id="dot-low" cx="90" cy="50" r="6" fill="#fff" />
+                </svg>
+                <div class="knob-value"><span id="val-low">10</span><span class="knob-unit">kPa</span></div>
+            </div>
+        </div>
+
+        <div class="workspace">
+            <div class="canvas-row-top">
+                <div style="color: #94a3b8; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; font-weight: bold;">Esquema SCADA de Componentes (Datos Dinámicos Acoplados)</div>
+                <canvas id="canvasPFD" width="920" height="230"></canvas>
+            </div>
+
+            <div class="canvas-row-bottom">
+                <div class="canvas-box">
+                    <h4>Diagrama Temperatura - Entropía ($T-s$)</h4>
+                    <canvas id="canvasTS" width="440" height="310"></canvas>
+                </div>
+                <div class="canvas-box">
+                    <h4>Diagrama Presión - Volumen ($P-v$)</h4>
+                    <canvas id="canvasPV" width="440" height="310"></canvas>
+                </div>
+            </div>
+
+            <div class="kpi-footer">
+                <div class="kpi-text">RENDIMIENTO TÉRMICO REAL: <span id="kpi-eta">0.0 %</span></div>
+                <div class="kpi-text">TRABAJO NETO ESPECÍFICO: <span id="kpi-wnet">0.0 kJ/kg</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables de Estado Físicas Iniciales
+let Phigh = 10.0;  // MPa
+let Tmax = 500.0;  // °C
+let Plow = 10.0;   // kPa
+
+// Configuración de los Knobs Circulares
+setupKnob("high", 2.0, 16.0, Phigh, (v) => { Phigh = v; verificarLimitesFisicos(); actualizarSimulacion(); });
+setupKnob("temp", 300.0, 600.0, Tmax, (v) => { Tmax = v; verificarLimitesFisicos(); actualizarSimulacion(); });
+setupKnob("low", 10.0, 150.0, Plow, (v) => { Plow = v; verificarLimitesFisicos(); actualizarSimulacion(); });
+
+function setupKnob(id, min, max, initialValue, callback) {
+    const container = document.getElementById(`container-${id}`);
+    const arc = document.getElementById(`arc-${id}`);
+    const dot = document.getElementById(`dot-${id}`);
+    const valText = document.getElementById(`val-${id}`);
+    const r = 40;
+    const circumference = 2 * Math.PI * r;
+
+    function updateVisuals(value) {
+        let pct = (value - min) / (max - min);
+        let offset = circumference - (pct * circumference);
+        arc.style.strokeDashoffset = offset;
+        let angle = pct * 2 * Math.PI;
+        dot.setAttribute("cx", 50 + r * Math.cos(angle));
+        dot.setAttribute("cy", 50 + r * Math.sin(angle));
+        valText.innerText = value.toFixed(id === "high" ? 1 : 0);
+    }
+
+    function calculateValue(e) {
+        const rect = container.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2 + 10;
+        let clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        let clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        let angle = Math.atan2(clientY - cy, clientX - cx) + Math.PI / 2;
+        if (angle < 0) angle += 2 * Math.PI;
+        let pct = Math.min(1, Math.max(0, angle / (2 * Math.PI)));
+        let val = min + pct * (max - min);
+        callback(val);
+        updateVisuals(val);
+    }
+
+    let isDragging = false;
+    container.addEventListener("mousedown", (e) => { isDragging = true; calculateValue(e); });
+    window.addEventListener("mousemove", (e) => { if (isDragging) calculateValue(e); });
+    window.addEventListener("mouseup", () => isDragging = false);
+    container.addEventListener("touchstart", (e) => { isDragging = true; calculateValue(e); }, {passive:true});
+    window.addEventListener("touchmove", (e) => { if (isDragging) calculateValue(e); }, {passive:true});
+    window.addEventListener("touchend", () => isDragging = false);
+    updateVisuals(initialValue);
+}
+
+// Relaciones termodinámicas reales (Ajustadas analíticamente para el Agua)
+let T_sat_baja, T_sat_alta;
+let h1, h2, h3, h4;
+
+function verificarLimitesFisicos() {
+    // La temperatura máxima de sobrecalentamiento no puede ser menor que la de ebullición de la caldera
+    T_sat_alta = 150 + (Phigh * 15); // Aproximación lineal de la curva de saturación P-T
+    if (Tmax < T_sat_alta + 40) {
+        Tmax = T_sat_alta + 40;
+        // Forzar actualización visual del knob de temperatura
+        setupKnob("temp", 300.0, 600.0, Tmax, (v) => { Tmax = v; verificarLimitesFisicos(); actualizarSimulacion(); });
+    }
+}
+
+function calcularTermodinamica() {
+    // 1. Calcular Temperaturas en función de las presiones elegidas en los controles
+    T_sat_baja = 35 + (Plow * 0.4); // Propiedad real: a menor kPa, menor es la temperatura de condensación
+    T_sat_alta = 160 + (Phigh * 13);
+
+    // 2. Cálculo dinámico de Entalpías (kJ/kg) simulando tablas de vapor condensado
+    h1 = 100 + (T_sat_baja * 4.18);
+    let trabajo_bomba = (Phigh - (Plow/1000)) * 1.01; // v*dP
+    h2 = h1 + trabajo_bomba;
+    
+    h3 = 2600 + (Tmax * 1.9) - (Phigh * 12);
+    // Expansión isentrópica en turbina
+    let rendimiento_estimado = 0.65 + (Tmax / 2000) - (Plow / 10000);
+    h4 = h3 - (h3 - (h1 + 1600)) * rendimiento_estimado;
+
+    // Rendimiento general del ciclo Rankine
+    let q_in = h3 - h2;
+    let w_turbina = h3 - h4;
+    let eta = (w_turbina - trabajo_bomba) / q_in;
+    if (eta < 0.1) eta = 0.1;
+    if (eta > 0.46) eta = 0.46;
+    
+    return {
+        eta: eta,
+        wnet: (w_turbina - trabajo_bomba)
+    };
+}
+
+function actualizarSimulacion() {
+    const resultados = calcularTermodinamica();
+
+    document.getElementById('kpi-eta').innerText = (resultados.eta * 100).toFixed(1) + " %";
+    document.getElementById('kpi-wnet').innerText = resultados.wnet.toFixed(1) + " kJ/kg";
+
+    dibujarPFD();
+    dibujarTS();
+    dibujarPV();
+}
+
+// --- DIBUJAR COMPONENTES UNIDOS (SCADA DINÁMICO) ---
+function dibujarPFD() {
+    const canvas = document.getElementById('canvasPFD');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const bx = 140, by = 140;   
+    const cx = 140, cy = 30;    
+    const tx = 660, ty = 30;    
+    const cnx = 660, cny = 140; 
+
+    ctx.lineWidth = 6;
+    // Tuberías
+    ctx.strokeStyle = "#38bdf8"; ctx.beginPath(); ctx.moveTo(bx + 40, by + 10); ctx.lineTo(cx + 40, cy + 50); ctx.stroke();
+    ctx.strokeStyle = "#ef4444"; ctx.beginPath(); ctx.moveTo(cx + 140, cy + 25); ctx.lineTo(tx, ty + 25); ctx.stroke();
+    ctx.strokeStyle = "#f97316"; ctx.beginPath(); ctx.moveTo(tx + 65, ty + 50); ctx.lineTo(cnx + 55, cny); ctx.stroke();
+    ctx.strokeStyle = "#1d4ed8"; ctx.beginPath(); ctx.moveTo(cnx, cny + 25); ctx.lineTo(bx + 80, by + 25); ctx.stroke();
+
+    ctx.fillStyle = "#fff"; ctx.font = "11px sans-serif";
+    ctx.fillText("▲", bx + 35, by - 35); ctx.fillText("▶", cx + 250, cy + 32);
+    ctx.fillText("▼", tx + 59, ty + 85); ctx.fillText("◀", cx + 250, by + 30);
+
+    // Caldera
+    ctx.fillStyle = "#1e293b"; ctx.strokeStyle = "#475569"; ctx.lineWidth = 2;
+    ctx.fillRect(cx, cy, 140, 50); ctx.strokeRect(cx, cy, 140, 50);
+    ctx.fillStyle = "#f43f5e"; ctx.font = "bold 11px sans-serif"; ctx.fillText("2. CALDERA (Boiler)", cx + 15, cy + 30);
+
+    // Turbina
+    ctx.fillStyle = "#1e293b"; ctx.beginPath();
+    ctx.moveTo(tx, ty); ctx.lineTo(tx + 70, ty + 15); ctx.lineTo(tx + 70, ty + 40); ctx.lineTo(tx, ty + 55);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 10px sans-serif"; ctx.fillText("3. TURBINA", tx + 6, ty + 32);
+
+    // Condensador
+    ctx.fillStyle = "#1e293b"; ctx.fillRect(cnx, cny, 110, 50); ctx.strokeRect(cnx, cny, 110, 50);
+    ctx.fillStyle = "#38bdf8"; ctx.font = "bold 10px sans-serif"; ctx.fillText("4. CONDENSADOR", cnx + 5, cny + 30);
+
+    // Bomba
+    ctx.fillStyle = "#1e293b"; ctx.beginPath(); ctx.arc(bx + 40, by + 25, 22, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 10px sans-serif"; ctx.fillText("1. BOMBA", bx + 16, by + 29);
+
+    // --- CAJAS DE DATOS COMPLETAMENTE VARIABLES Y COHERENTES CON LOS SLIDERS ---
+    ctx.font = "9px monospace";
+    
+    // Estado 1 (Entrada Bomba)
+    dibujarCajaSCADA(ctx, bx + 130, by + 10, [
+        `P1: ${Plow.toFixed(0)} kPa`,
+        `T1: ${T_sat_baja.toFixed(1)} °C`,
+        `h1: ${h1.toFixed(1)} kJ/kg`
+    ]);
+
+    // Estado 2 (Salida Bomba)
+    dibujarCajaSCADA(ctx, bx - 10, by - 55, [
+        `P2: ${Phigh.toFixed(1)} MPa`,
+        `T2: ${(T_sat_baja + 0.4).toFixed(1)} °C`,
+        `h2: ${h2.toFixed(1)} kJ/kg`
+    ]);
+
+    // Estado 3 (Entrada Turbina)
+    dibujarCajaSCADA(ctx, cx + 220, cy + 5, [
+        `P3: ${Phigh.toFixed(1)} MPa`,
+        `T3: ${Tmax.toFixed(0)} °C`,
+        `h3: ${h3.toFixed(1)} kJ/kg`
+    ]);
+
+    // Estado 4 (Salida Turbina)
+    dibujarCajaSCADA(ctx, tx + 85, ty + 75, [
+        `P4: ${Plow.toFixed(0)} kPa`,
+        `T4: ${T_sat_baja.toFixed(1)} °C`,
+        `h4: ${h4.toFixed(1)} kJ/kg`
+    ]);
+}
+
+function dibujarCajaSCADA(ctx, x, y, lineas) {
+    ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+    ctx.strokeStyle = "#4ade80";
+    ctx.lineWidth = 1;
+    ctx.fillRect(x, y, 110, 42);
+    ctx.strokeRect(x, y, 110, 42);
+    ctx.fillStyle = "#deff9a";
+    for(let i=0; i<lineas.length; i++) {
+        ctx.fillText(lineas[i], x + 6, y + 12 + (i * 12));
+    }
+}
+
+// --- DIAGRAMA T-s TOTALMENTE INTERACTIVO ---
+function dibujarTS() {
+    const canvas = document.getElementById('canvasTS');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const ox = 55, oy = 260, w = 350, h = 210;
+    dibujarEjes(ctx, ox, oy, w, h, "Entropía s", "Temperatura T");
+
+    let xc = ox + w / 2 - 35;
+    let yc = oy - h + 65;
+
+    // Domo de control
+    ctx.strokeStyle = "#f43f5e"; ctx.lineWidth = 2; ctx.beginPath();
+    let primerPunto = true;
+    for (let x = ox + 15; x <= ox + w - 45; x++) {
+        let dist = x - xc;
+        let y = yc + 0.0042 * Math.pow(dist, 2);
+        if (y >= yc && y <= oy) {
+            if (primerPunto) { ctx.moveTo(x, y); primerPunto = false; }
+            else ctx.lineTo(x, y);
+        }
+    }
+    ctx.stroke();
+
+    // Vinculación visual estricta de las alturas de temperatura
+    let y_iso_alta = oy - 60 - (T_sat_alta * 0.25);
+    let y_iso_baja = oy - 20 - (T_sat_baja * 0.25);
+    let y_tmax = oy - 60 - (Tmax * 0.25);
+
+    // Ajustar escalas para que no desborde jamás el cuadrante
+    if (y_tmax < oy - h + 15) y_tmax = oy - h + 15;
+
+    let semi_alta = Math.sqrt(Math.max(0, (y_iso_alta - yc) / 0.0042));
+    let semi_baja = Math.sqrt(Math.max(0, (y_iso_baja - yc) / 0.0042));
+
+    let x1 = xc - semi_baja;
+    let x2 = x1;
+    let y2 = y_iso_alta + 10;
+    let x_liq_sat = xc - semi_alta;
+    let x_vap_sat = xc + semi_alta;
+
+    let x3 = x_vap_sat + (Tmax - T_sat_alta) * 0.15;
+    let x4 = x3;
+
+    // Trazado del Ciclo Dinámico
+    ctx.strokeStyle = "#4ade80"; ctx.lineWidth = 3; ctx.fillStyle = "rgba(74, 222, 128, 0.08)";
+    ctx.beginPath();
+    ctx.moveTo(x1, y_iso_baja);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x_liq_sat, y_iso_alta);
+    ctx.lineTo(x_vap_sat, y_iso_alta);
+    ctx.quadraticCurveTo(x_vap_sat + 10, y_iso_alta, x3, y_tmax); // Curva hacia punto 3 real variable
+    ctx.lineTo(x4, y_iso_baja);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+
+    dibujarMarcador(ctx, x1, y_iso_baja, "1");
+    dibujarMarcador(ctx, x2, y2, "2");
+    dibujarMarcador(ctx, x3, y_tmax, "3");
+    dibujarMarcador(ctx, x4, y_iso_baja, "4");
+}
+
+// --- DIAGRAMA P-v INTERACTIVO ---
+function dibujarPV() {
+    const canvas = document.getElementById('canvasPV');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const ox = 55, oy = 260, w = 350, h = 210;
+    dibujarEjes(ctx, ox, oy, w, h, "Volumen v", "Presión P");
+
+    let xc = ox + 55;
+    let yc = oy - h + 60;
+
+    ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(ox + 25, oy);
+    ctx.lineTo(xc, yc);
+    for (let i = 0; i <= 100; i++) {
+        let pct = i / 100;
+        let yp = yc + pct * (oy - yc);
+        let xp = xc + (w - 110) * Math.pow(pct, 0.65);
+        ctx.lineTo(xp, yp);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    let y_alta = oy - 45 - (Phigh * 8);
+    let y_baja = oy - 20 - (Plow * 0.4);
+
+    let pct_alta = (y_alta - yc) / (oy - yc);
+    let x3_sat = xc + (w - 110) * Math.pow(Math.max(0, pct_alta), 0.65);
+    // Expandir punto 3 hacia la derecha según el sobrecalentamiento térmico
+    let x3 = x3_sat + (Tmax - T_sat_alta) * 0.15;
+
+    let x1 = ox + 27;
+    let x2 = x1;
+    let x4 = x3 + 5; 
+
+    ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 3; ctx.fillStyle = "rgba(245, 158, 11, 0.08)";
+    ctx.beginPath();
+    ctx.moveTo(x1, y_baja);
+    ctx.lineTo(x2, y_alta);
+    ctx.lineTo(x3, y_alta);
+    ctx.quadraticCurveTo(x3 + 15, y_alta + (y_baja - y_alta)*0.4, x4, y_baja);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+
+    dibujarMarcador(ctx, x1, y_baja, "1");
+    dibujarMarcador(ctx, x2, y_alta, "2");
+    dibujarMarcador(ctx, x3, y_alta, "3");
+    dibujarMarcador(ctx, x4, y_baja, "4");
+}
+
+function dibujarEjes(ctx, ox, oy, w, h, lblX, lblY) {
+    ctx.strokeStyle = "#334155"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(ox, oy - h); ctx.lineTo(ox, oy); ctx.lineTo(ox + w, oy); ctx.stroke();
+    ctx.fillStyle = "#64748b"; ctx.font = "11px sans-serif";
+    ctx.fillText(lblX, ox + w - 80, oy + 16);
+    ctx.save(); ctx.translate(ox - 12, oy - h + 45); ctx.rotate(-Math.PI / 2);
+    ctx.fillText(lblY, 0, 0); ctx.restore();
+}
+
+function dibujarMarcador(ctx, x, y, num) {
+    ctx.fillStyle = "#4ade80"; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = "#000"; ctx.font = "bold 9px monospace"; ctx.fillText(num, x - 2.5, y + 3);
+}
+
+// Lanzamiento inicial con sincronización
+actualizarSimulacion();
+</script>
+
+</body>
+</html>
